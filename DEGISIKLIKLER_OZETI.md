@@ -120,7 +120,6 @@ Tüm dosyalar `outputs` klasöründe:
 ✅ KULLANIM_KILAVUZU.md      - Türkçe detaylı kılavuz
 ✅ LICENSE                   - MIT License
 ✅ .gitignore                - Kişisel dosyaları korur
-✅ GITHUB_YUKLEME_REHBERI.md - Yükleme rehberi
 ```
 
 ---
@@ -129,18 +128,10 @@ Tüm dosyalar `outputs` klasöründe:
 
 ### Kullanıcı Olarak:
 1. GitHub'dan indir
-2. `python email_bot.py` çalıştır
+2. `RUN.bat` dosyasını çalıştır
 3. Gmail bilgilerini gir
 4. Tarama yap
 5. Mail gönder
-
-### GitHub'a Yüklemek İçin:
-1. `GITHUB_YUKLEME_REHBERI.md` dosyasını oku
-2. Adım adım takip et
-3. Repository oluştur
-4. Dosyaları yükle
-5. README'yi özelleştir
-
 ---
 
 ## 📝 Test Edildi ✅
@@ -178,11 +169,6 @@ Artık program:
 
 Herhangi bir sorun olursa:
 - `KULLANIM_KILAVUZU.md` → Detaylı kullanım
-- `GITHUB_YUKLEME_REHBERI.md` → GitHub yükleme
 - `README.md` → Genel bilgiler
 
 ---
-
-**Başarılar! 🎊**
-
-Program artık tamamen hazır ve GitHub'a yüklenebilir!
