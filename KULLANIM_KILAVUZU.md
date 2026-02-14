@@ -20,15 +20,14 @@
 ### Adım 2: Programı İndirin
 ```bash
 # GitHub'dan indirin
-git clone https://github.com/KULLANICI_ADINIZ/email-bot.git
+git clone https://github.com/emreyaman1/email-bot.git
 
 # veya ZIP olarak indirip çıkartın
 ```
 
 ### Adım 3: Programı Başlatın
 ```bash
-cd email-bot
-python email_bot.py
+RUN.bat dosyasını çalıştırın
 ```
 
 **İlk çalıştırmada:**
@@ -495,12 +494,12 @@ copy email_bot.db email_bot_backup_2026-02-14.db
 1. **Bu kılavuzu okuyun** (çoğu sorun burada)
 2. [Sorun Giderme](#-sorun-giderme) bölümüne bakın
 3. Hala çözmediyseniz:
-   - [GitHub Issues](https://github.com/KULLANICI_ADINIZ/email-bot/issues)
+   - [GitHub Issues](https://github.com/emreyaman1/email-bot/issues)
    - Yeni issue açın
 
 ### Özellik İsteği
 - Yeni özellik ister misiniz?
-- [Feature Request](https://github.com/KULLANICI_ADINIZ/email-bot/issues/new?template=feature_request.md) açın
+- [Feature Request](https://github.com/emreyaman1/email-bot/issues/new?template=feature_request.md) açın
 
 ---
 
