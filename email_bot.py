@@ -497,7 +497,8 @@ class EmailBot:
         
     def is_valid_email(self, email):
         """
-        Email adresini doğrula - dosya uzantılarını ve geçersiz emailleri filtrele
+        Email adresini doğrula - GEVŞEK MOD (IKA MCBU için)
+        Sadece temel formatı kontrol et, agresif filtreleme yapma
         
         Args:
             email: Kontrol edilecek email adresi
@@ -514,6 +515,10 @@ class EmailBot:
         if email.count('@') != 1:
             return False
         
+        # Email çok kısa olmamalı (minimum a@b.c)
+        if len(email) < 5:
+            return False
+        
         try:
             username, domain = email.split('@')
             
@@ -521,7 +526,7 @@ class EmailBot:
             if not username or len(username) < 1:
                 return False
             
-            # Domain kontrolü
+            # Domain kontrolü - en az bir nokta içermeli
             if not domain or '.' not in domain:
                 return False
             
@@ -535,58 +540,35 @@ class EmailBot:
             if len(tld) < 2:
                 return False
             
-            # Dosya uzantısı kontrolü - TLD dosya uzantısı olmamalı
-            if tld in self.file_extensions_blacklist:
+            # SADECE AÇIK DOSYA UZANTISI FİLTRELEMESİ - Diğer her şeyi geçir
+            # Sadece resim/video/arşiv dosyalarını filtrele
+            image_and_file_extensions = {
+                'png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'ico',
+                'mp4', 'avi', 'mov', 'mp3', 'wav',
+                'zip', 'rar', '7z', 'tar', 'gz',
+                'exe', 'dll', 'dmg'
+            }
+            
+            # Sadece TLD dosya uzantısıysa filtrele
+            if tld in image_and_file_extensions:
                 return False
             
-            # Domain'in herhangi bir kısmı dosya uzantısı içermemeli
-            for part in domain_parts:
-                if part in self.file_extensions_blacklist:
-                    return False
-            
-            # Username'in sonunda dosya uzantısı olmamalı
-            if '.' in username:
-                username_parts = username.split('.')
-                last_part = username_parts[-1]
-                if last_part in self.file_extensions_blacklist:
-                    return False
-            
-            # Email'in tamamında dosya uzantısı arama (örn: something@2x.png)
-            # Email'in son kısmı kontrol et
+            # Email'in son kısmı kontrol et (örn: something@image.png gibi)
             email_parts = email.split('.')
             if len(email_parts) > 1:
                 last_ext = email_parts[-1]
-                if last_ext in self.file_extensions_blacklist:
+                if last_ext in image_and_file_extensions:
                     return False
             
-            # Temel format kontrolü - sadece geçerli karakterler
-            import string
-            valid_username_chars = string.ascii_lowercase + string.digits + '._-+%'
-            valid_domain_chars = string.ascii_lowercase + string.digits + '.-'
-            
-            for char in username:
-                if char not in valid_username_chars:
-                    return False
-            
-            for char in domain:
-                if char not in valid_domain_chars:
-                    return False
-            
-            # Nokta veya tire ile başlamamalı/bitmemeli
+            # Nokta veya tire ile başlamamalı/bitmemeli (temel kontrol)
             if username.startswith('.') or username.endswith('.'):
-                return False
-            if username.startswith('-') or username.endswith('-'):
                 return False
             if domain.startswith('.') or domain.endswith('.'):
                 return False
             if domain.startswith('-') or domain.endswith('-'):
                 return False
             
-            # Art arda nokta olmamalı
-            if '..' in username or '..' in domain:
-                return False
-            
-            # Geçerli bir email
+            # Geçerli bir email - GEVŞEK MOD
             return True
             
         except Exception as e:
@@ -2019,14 +2001,28 @@ Bu özel bir "Uygulama Şifresi"dir ve Gmail ayarlarından alınır.
                     gc.collect()
                     time.sleep(2)
                 else:
-                    # Diğer sayfalar için OPTIMIZE SCROLL VE MAİL ARAMA
-                    # 2 geçiş yerine 1 geçiş - RAM için
+                    # FİRMA DETAY SAYFALARI İÇİN AGRESİF SCROLL
+                    # JavaScript ile yüklenen içerik için daha uzun bekleme
+                    self.log(f"   📜 Firma detay sayfası scroll ediliyor...")
+                    
+                    # İlk scroll - sayfanın yüklenmesini bekle
+                    time.sleep(2)  # Sayfa yüklenmesi için ekstra bekleme
+                    
+                    # Agresif scroll - 5 tur
+                    for scroll_round in range(5):
+                        # Alta scroll
+                        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                        time.sleep(2)  # JavaScript yüklenmesi için daha uzun bekleme
+                        
+                        # Üste scroll
+                        driver.execute_script("window.scrollTo(0, 0);")
+                        time.sleep(1)
+                    
+                    # Son bir kez alta scroll ve bekle
                     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                    time.sleep(1.5)
-                    driver.execute_script("window.scrollTo(0, 0);")
-                    time.sleep(1)
-                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                    time.sleep(1.5)
+                    time.sleep(3)  # Mail yüklenmesi için ekstra bekleme
+                    
+                    self.log(f"   ✅ Scroll tamamlandı")
                 
                 # YÖNTEM 1: Page source ile mail bul
                 page_source = driver.page_source
@@ -2040,7 +2036,46 @@ Bu özel bir "Uygulama Şifresi"dir ve Gmail ayarlarından alınır.
                 except:
                     pass
                 
+                # YÖNTEM 3: mailto: linklerinden mail bul (hidden emails için)
+                try:
+                    mailto_links = driver.find_elements(By.XPATH, "//a[starts-with(@href, 'mailto:')]")
+                    for link in mailto_links:
+                        href = link.get_attribute("href")
+                        if href and "mailto:" in href:
+                            email_from_mailto = href.replace("mailto:", "").split("?")[0].strip()
+                            found_emails.append(email_from_mailto)
+                            self.log(f"   📧 mailto: linkten bulundu: {email_from_mailto}")
+                except:
+                    pass
+                
+                # YÖNTEM 4: Email input alanlarından value bul
+                try:
+                    email_inputs = driver.find_elements(By.XPATH, "//input[@type='email'] | //input[contains(@name, 'email') or contains(@id, 'email')]")
+                    for input_elem in email_inputs:
+                        value = input_elem.get_attribute("value")
+                        if value and "@" in value:
+                            found_emails.append(value)
+                            self.log(f"   📧 input'tan bulundu: {value}")
+                except:
+                    pass
+                
+                # YÖNTEM 5: Contact/email class/id'li elementlerden mail bul
+                try:
+                    contact_elements = driver.find_elements(By.XPATH, 
+                        "//*[contains(@class, 'email') or contains(@class, 'mail') or contains(@class, 'contact') or " +
+                        "contains(@id, 'email') or contains(@id, 'mail') or contains(@id, 'contact')]")
+                    for elem in contact_elements:
+                        elem_text = elem.text
+                        if elem_text and "@" in elem_text:
+                            contact_emails = email_pattern.findall(elem_text)
+                            found_emails.extend(contact_emails)
+                except:
+                    pass
+                
                 # Mail bul - tüm yöntemlerden gelen mailleri işle
+                page_emails_found = 0
+                filtered_emails_debug = []
+                
                 for email in found_emails:
                     clean_email = email.lower().strip()
                     # Geçersiz karakterleri temizle
@@ -2050,12 +2085,23 @@ Bu özel bir "Uygulama Şifresi"dir ve Gmail ayarlarından alınır.
                     if self.is_valid_email(clean_email):
                         if clean_email not in emails:
                             emails.add(clean_email)
+                            page_emails_found += 1
                             self.log(f"   📧 {clean_email}")
                             self.emails_found_count.set(len(emails))
                     else:
-                        # Geçersiz email'leri logla (debug için - ama çok fazla log olmasın diye sadece ilk birkaç kez)
-                        if clean_email.count('@') == 1 and len(emails) < 50:  # İlk 50 mail'de debug
-                            self.log(f"   ⚠️ Filtrelendi: {clean_email}", "WARNING")
+                        # Geçersiz email'leri logla - DETAYLI DEBUG
+                        if clean_email.count('@') == 1:
+                            filtered_emails_debug.append(clean_email)
+                
+                # Debug: Filtrelenen mailleri göster
+                if filtered_emails_debug:
+                    self.log(f"   ⚠️ FİLTRELENEN MAILLER ({len(filtered_emails_debug)}):", "WARNING")
+                    for filtered_email in filtered_emails_debug[:10]:  # İlk 10 tanesini göster
+                        self.log(f"      • {filtered_email}", "WARNING")
+                
+                # Debug: Eğer bu sayfada mail bulunamadıysa logla
+                if page_emails_found == 0:
+                    self.log(f"   ⚠️ Bu sayfada mail bulunamadı (toplam: {len(found_emails)} email pattern bulundu, {len(filtered_emails_debug)} filtrelendi)", "WARNING")
                 
                 # Belleği temizle
                 page_source = None
@@ -2101,8 +2147,29 @@ Bu özel bir "Uygulama Şifresi"dir ve Gmail ayarlarından alınır.
                                     for link in links:
                                         try:
                                             href = link.get_attribute("href")
-                                            # İAYOSB için /works/ kullan (firmalar/ değil)
-                                            if href and '/works/' in href:
+                                            
+                                            # ÇOKLU SİTE DESTEĞİ - Farklı URL pattern'lerini kontrol et
+                                            should_add = False
+                                            
+                                            if href:
+                                                # İAYOSB için /works/
+                                                if '/works/' in href:
+                                                    should_add = True
+                                                # MOSB ve benzer siteler için /firmalar/
+                                                elif '/firmalar/' in href or '/firmalarimiz/' in href:
+                                                    should_add = True
+                                                # İKA MCBU için /Duyuru/ ve /DuyuruArsiv/
+                                                elif '/Duyuru/' in href or '/duyuru/' in href:
+                                                    should_add = True
+                                                elif '/DuyuruArsiv/' in href or '/duyuruarsiv/' in href:
+                                                    should_add = True
+                                                elif '/Arsiv/' in href or '/arsiv/' in href:
+                                                    should_add = True
+                                                # Genel firma/şirket/member sayfaları
+                                                elif any(pattern in href.lower() for pattern in ['/firma/', '/sirket/', '/member/', '/company/', '/detay/', '/detail/']):
+                                                    should_add = True
+                                            
+                                            if should_add:
                                                 parsed = urlparse(href)
                                                 
                                                 if parsed.netloc == base_domain or not parsed.netloc:
@@ -2145,8 +2212,29 @@ Bu özel bir "Uygulama Şifresi"dir ve Gmail ayarlarından alınır.
                             extra_count = 0
                             for a_tag in all_links:
                                 href = a_tag.get('href', '')
-                                # İAYOSB için /works/ kullan (firmalar/ değil)
-                                if '/works/' in href:
+                                
+                                # ÇOKLU SİTE DESTEĞİ - Farklı URL pattern'lerini kontrol et
+                                should_add = False
+                                
+                                if href:
+                                    # İAYOSB için /works/
+                                    if '/works/' in href:
+                                        should_add = True
+                                    # MOSB ve benzer siteler için /firmalar/
+                                    elif '/firmalar/' in href or '/firmalarimiz/' in href:
+                                        should_add = True
+                                    # İKA MCBU için /Duyuru/ ve /DuyuruArsiv/
+                                    elif '/Duyuru/' in href or '/duyuru/' in href:
+                                        should_add = True
+                                    elif '/DuyuruArsiv/' in href or '/duyuruarsiv/' in href:
+                                        should_add = True
+                                    elif '/Arsiv/' in href or '/arsiv/' in href:
+                                        should_add = True
+                                    # Genel firma/şirket/member sayfaları
+                                    elif any(pattern in href.lower() for pattern in ['/firma/', '/sirket/', '/member/', '/company/', '/detay/', '/detail/']):
+                                        should_add = True
+                                
+                                if should_add:
                                     parsed = urlparse(href)
                                     
                                     if parsed.netloc == base_domain or not parsed.netloc:
