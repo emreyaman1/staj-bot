@@ -218,8 +218,7 @@ Bu program sadece **yasal ve etik kullanım** için tasarlanmıştır:
 ## 📞 Destek
 
 Sorun mu yaşıyorsunuz? 
-- 🐛 [Issue açın](https://github.com/KULLANICI_ADINIZ/email-bot/issues)
-- 📖 [Wiki'yi kontrol edin](https://github.com/KULLANICI_ADINIZ/email-bot/wiki)
+yemreyaman1@gmail.com
 
 ## 🙏 Teşekkürler
 
@@ -229,6 +228,6 @@ Bu programı kullandığınız için teşekkürler!
 
 ---
 
-**Yapımcı:** [Sizin Adınız]  
+**Yapımcı:** Yunus Emre Yaman  
 **Versiyon:** 3.3  
 **Son Güncelleme:** 2026-02-14
