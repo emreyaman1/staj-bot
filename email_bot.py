@@ -113,9 +113,16 @@ try:
     from selenium.webdriver.support import expected_conditions as EC
     
 except ImportError as e:
-    print(f"Import hatası: {e}")
-    print("Lütfen programı yeniden başlatın!")
-    input("Enter'a basın...")
+    print("\n" + "="*60)
+    print("  HATA: GEREKLI KUTUPHANE EKSIK!")
+    print("="*60)
+    print(f"\nEksik kutuphane: {e}")
+    print("\nCOZUM:")
+    print("1. RUN.bat dosyasini calistirin (Onerilen)")
+    print("2. veya komut satirinda su komutu calistirin:")
+    print("   pip install beautifulsoup4 requests lxml openpyxl selenium")
+    print("\n" + "="*60)
+    input("\nEnter'a basin...")
     sys.exit(1)
 
 
