@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+,#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 E-posta Otomasyon Botu v3.3 - ÇOKLU SİTE TARAMA + DERİN TARAMA
@@ -19,6 +19,7 @@ def check_and_install_requirements():
         'lxml': 'lxml',
         'openpyxl': 'openpyxl',
         'selenium': 'selenium',
+        'PyPDF2': 'PyPDF2',
     }
     
     print("\n" + "="*60)
@@ -99,6 +100,7 @@ try:
     import platform
     import shutil
     import gc  # Garbage collector - RAM optimizasyonu için
+    import PyPDF2  # PDF okuma için
     
     # SELENIUM İÇİN
     from selenium import webdriver
@@ -120,7 +122,7 @@ except ImportError as e:
     print("\nCOZUM:")
     print("1. RUN.bat dosyasini calistirin (Onerilen)")
     print("2. veya komut satirinda su komutu calistirin:")
-    print("   pip install beautifulsoup4 requests lxml openpyxl selenium")
+    print("   pip install beautifulsoup4 requests lxml openpyxl selenium PyPDF2")
     print("\n" + "="*60)
     input("\nEnter'a basin...")
     sys.exit(1)
@@ -808,6 +810,8 @@ class EmailBot:
                   command=self.delete_all_emails).pack(side='left', padx=5)
         ttk.Button(btn_frame2, text="📊 Excel'den Al", 
                   command=self.import_from_excel).pack(side='left', padx=5)
+        ttk.Button(btn_frame2, text="📄 PDF'den Al", 
+                  command=self.import_from_pdf).pack(side='left', padx=5)
         ttk.Button(btn_frame2, text="📤 Dışa Aktar", 
                   command=self.export_emails).pack(side='left', padx=5)
         
@@ -1312,6 +1316,88 @@ Bu özel bir "Uygulama Şifresi"dir ve Gmail ayarlarından alınır.
         except Exception as e:
             self.log(f"❌ Excel hatası: {e}", "ERROR")
             messagebox.showerror("Hata", f"Excel okunamadı:\n{e}")
+    
+    def import_from_pdf(self):
+        """PDF'den mail adresi aktar"""
+        file_paths = filedialog.askopenfilenames(
+            title="PDF Dosyalarını Seç (Birden fazla seçebilirsiniz)",
+            filetypes=[("PDF", "*.pdf"), ("All", "*.*")]
+        )
+        
+        if not file_paths:
+            return
+        
+        try:
+            self.log(f"📄 {len(file_paths)} PDF dosyası işleniyor...")
+            
+            email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+            all_emails_found = set()
+            processed_files = 0
+            failed_files = []
+            
+            for file_path in file_paths:
+                try:
+                    self.log(f"📖 Okunuyor: {os.path.basename(file_path)}")
+                    
+                    # PDF'yi aç
+                    with open(file_path, 'rb') as pdf_file:
+                        pdf_reader = PyPDF2.PdfReader(pdf_file)
+                        
+                        # Tüm sayfaları oku
+                        for page_num in range(len(pdf_reader.pages)):
+                            page = pdf_reader.pages[page_num]
+                            text = page.extract_text()
+                            
+                            if text:
+                                # Mail adreslerini bul
+                                found_emails = email_pattern.findall(text)
+                                for email in found_emails:
+                                    all_emails_found.add(email.lower().strip())
+                    
+                    processed_files += 1
+                    
+                except Exception as e:
+                    self.log(f"❌ {os.path.basename(file_path)}: {str(e)}", "ERROR")
+                    failed_files.append(os.path.basename(file_path))
+            
+            if not all_emails_found:
+                messagebox.showwarning("Uyarı", "Hiçbir PDF'de mail adresi bulunamadı!")
+                return
+            
+            # Veritabanına ekle
+            new_count = 0
+            for email in all_emails_found:
+                try:
+                    self.cursor.execute(
+                        'INSERT OR IGNORE INTO email_pool (email, source_url) VALUES (?, ?)',
+                        (email, f'PDF: {len(file_paths)} dosya')
+                    )
+                    if self.cursor.rowcount > 0:
+                        new_count += 1
+                except Exception as e:
+                    self.log(f"❌ {email}: {e}", "ERROR")
+            
+            self.conn.commit()
+            
+            # Sonuç mesajı
+            result_msg = f"✅ {new_count} yeni mail eklendi!\n\n"
+            result_msg += f"📄 İşlenen dosya: {processed_files}/{len(file_paths)}\n"
+            result_msg += f"📧 Bulunan mail: {len(all_emails_found)}\n"
+            result_msg += f"🆕 Yeni eklenen: {new_count}"
+            
+            if failed_files:
+                result_msg += f"\n\n⚠️ Okunamayan dosyalar:\n" + "\n".join(failed_files[:5])
+                if len(failed_files) > 5:
+                    result_msg += f"\n... ve {len(failed_files)-5} dosya daha"
+            
+            self.log(f"✅ PDF: {len(all_emails_found)} mail bulundu, {new_count} yeni eklendi")
+            messagebox.showinfo("Başarılı", result_msg)
+            
+            self.refresh_email_list()
+            
+        except Exception as e:
+            self.log(f"❌ PDF hatası: {e}", "ERROR")
+            messagebox.showerror("Hata", f"PDF işlenemedi:\n{e}")
             
     def export_emails(self):
         """Dışa aktar"""
