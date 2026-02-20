@@ -1,4 +1,4 @@
-,#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 E-posta Otomasyon Botu v3.3 - ÇOKLU SİTE TARAMA + DERİN TARAMA
