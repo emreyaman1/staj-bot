@@ -49,7 +49,7 @@ En az birini yüklü olmalı:
 
 ### 2. Projeyi İndir
 ```bash
-git clone https://github.com/KULLANICI_ADINIZ/email-bot.git
+git clone https://github.com/emreyaman1/email-bot.git
 cd email-bot
 ```
 
