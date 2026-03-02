@@ -2,6 +2,9 @@
 title Email Bot Baslatici
 color 0A
 
+REM ===== CALISMA DIZININI AYARLA =====
+cd /d "%~dp0"
+
 echo.
 echo ====================================================
 echo           EMAIL BOT BASLATICI v1.0
